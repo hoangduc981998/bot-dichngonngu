@@ -1,0 +1,25 @@
+[Unit]
+Description=Bot Telegram Dich Ngon Ngu (VN-EN-ZH)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bot-dichngonngu
+Group=bot-dichngonngu
+WorkingDirectory=/opt/dichngonngu
+ExecStart=/opt/dichngonngu/venv/bin/python /opt/dichngonngu/main.py
+Restart=always
+RestartSec=5
+
+# Bảo mật cơ bản
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/dichngonngu
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
