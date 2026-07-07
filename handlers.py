@@ -39,17 +39,24 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "   `en xin chào` hoặc `xin chào zh`"
         )
         return
-    elif access.is_pending(uid):
-        logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
-        await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
-        return
+
+    is_pending = access.is_pending(uid)
 
     if not await start_rate_limiter.check(uid):
-        retry_after = await start_rate_limiter.get_retry_after(uid)
-        logger.warning("User %s bị giới hạn /start, thử lại sau %s giây.", uid, retry_after)
-        await update.message.reply_text(
-            f"⏳ Bạn thao tác quá nhanh. Vui lòng chờ {retry_after} giây rồi thử lại /start."
-        )
+        if is_pending:
+            logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
+            await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
+        else:
+            retry_after = await start_rate_limiter.get_retry_after(uid)
+            logger.warning("User %s bị giới hạn /start, thử lại sau %s giây.", uid, retry_after)
+            await update.message.reply_text(
+                f"⏳ Bạn thao tác quá nhanh. Vui lòng chờ {retry_after} giây rồi thử lại /start."
+            )
+        return
+
+    if is_pending:
+        logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
+        await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
         return
 
     # Người lạ -> gửi yêu cầu về chủ bot

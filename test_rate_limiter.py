@@ -50,3 +50,12 @@ class RateLimiterTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await limiter.check(999))
         self.assertTrue(await limiter.check(999))
         self.assertEqual(await limiter.get_retry_after(999), 0)
+
+    async def test_retry_after_is_zero_after_window_expires(self) -> None:
+        clock = _Clock()
+        limiter = RateLimiter(max_requests=1, window_seconds=10, time_func=clock.time)
+
+        await limiter.check(123)
+        clock.advance(10)
+
+        self.assertEqual(await limiter.get_retry_after(123), 0)

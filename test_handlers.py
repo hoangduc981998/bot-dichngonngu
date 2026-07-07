@@ -47,9 +47,13 @@ class HandlersTestCase(unittest.IsolatedAsyncioTestCase):
         access_mock.is_allowed.return_value = False
         access_mock.is_pending.return_value = True
 
-        with patch.object(handlers, "access", access_mock):
+        with (
+            patch.object(handlers, "access", access_mock),
+            patch.object(handlers.start_rate_limiter, "check", new=AsyncMock(return_value=False)) as check_mock,
+        ):
             await handlers.cmd_start(update, context)
 
+        check_mock.assert_awaited_once_with(123)
         context.bot.send_message.assert_not_awaited()
         access_mock.add_pending.assert_not_called()
         update.message.reply_text.assert_awaited_once()
