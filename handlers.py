@@ -11,7 +11,6 @@ from rate_limiter import RateLimiter
 from translator import translate
 
 logger = logging.getLogger(__name__)
-PENDING_APPROVAL_MESSAGE = "⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi."
 
 access = AccessControl(config.ALLOWED_USERS_FILE, config.OWNER_ID)
 message_rate_limiter = RateLimiter(
@@ -27,8 +26,9 @@ start_rate_limiter = RateLimiter(
 
 
 async def _reply_pending_start(update: Update, user_id: int) -> None:
+    pending_approval_message = "⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi."
     logger.info("User %s đang chờ duyệt và gửi lại /start.", user_id)
-    await update.message.reply_text(PENDING_APPROVAL_MESSAGE)
+    await update.message.reply_text(pending_approval_message)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
