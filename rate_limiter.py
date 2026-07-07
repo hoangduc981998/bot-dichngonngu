@@ -64,7 +64,7 @@ class RateLimiter:
             return None
 
         cutoff = now - self.window_seconds
-        while events and events[0] <= cutoff:
+        while events and events[0] < cutoff:
             events.popleft()
 
         if not events:

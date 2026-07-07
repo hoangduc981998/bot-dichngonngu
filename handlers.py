@@ -11,6 +11,7 @@ from rate_limiter import RateLimiter
 from translator import translate
 
 logger = logging.getLogger(__name__)
+PENDING_APPROVAL_MESSAGE = "⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi."
 
 access = AccessControl(config.ALLOWED_USERS_FILE, config.OWNER_ID)
 message_rate_limiter = RateLimiter(
@@ -23,6 +24,11 @@ start_rate_limiter = RateLimiter(
     window_seconds=config.START_COOLDOWN_SECONDS,
     exempt_user_ids={config.OWNER_ID},
 )
+
+
+async def _reply_pending_start(update: Update, user_id: int) -> None:
+    logger.info("User %s đang chờ duyệt và gửi lại /start.", user_id)
+    await update.message.reply_text(PENDING_APPROVAL_MESSAGE)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -44,8 +50,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if not await start_rate_limiter.check(uid):
         if is_pending:
-            logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
-            await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
+            await _reply_pending_start(update, uid)
         else:
             retry_after = await start_rate_limiter.get_retry_after(uid)
             logger.warning("User %s bị giới hạn /start, thử lại sau %s giây.", uid, retry_after)
@@ -55,8 +60,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if is_pending:
-        logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
-        await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
+        await _reply_pending_start(update, uid)
         return
 
     # Người lạ -> gửi yêu cầu về chủ bot

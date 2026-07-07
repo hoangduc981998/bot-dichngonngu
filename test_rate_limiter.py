@@ -29,7 +29,7 @@ class RateLimiterTestCase(unittest.IsolatedAsyncioTestCase):
 
         await limiter.check(123)
         await limiter.check(123)
-        clock.advance(10)
+        clock.advance(10.001)
 
         self.assertTrue(await limiter.check(123))
 
@@ -56,6 +56,6 @@ class RateLimiterTestCase(unittest.IsolatedAsyncioTestCase):
         limiter = RateLimiter(max_requests=1, window_seconds=10, time_func=clock.time)
 
         await limiter.check(123)
-        clock.advance(10)
+        clock.advance(10.001)
 
         self.assertEqual(await limiter.get_retry_after(123), 0)
