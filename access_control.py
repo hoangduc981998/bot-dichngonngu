@@ -42,6 +42,9 @@ class AccessControl:
     def is_allowed(self, user_id: int) -> bool:
         return user_id == self.owner_id or user_id in self.allowed
 
+    def is_pending(self, user_id: int) -> bool:
+        return user_id in self.pending
+
     def add_pending(self, user_id: int) -> None:
         with self._lock:
             self.pending.add(user_id)

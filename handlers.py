@@ -7,11 +7,22 @@ from telegram.ext import ContextTypes
 
 import config
 from access_control import AccessControl
+from rate_limiter import RateLimiter
 from translator import translate
 
 logger = logging.getLogger(__name__)
 
 access = AccessControl(config.ALLOWED_USERS_FILE, config.OWNER_ID)
+message_rate_limiter = RateLimiter(
+    max_requests=config.RATE_LIMIT_MAX,
+    window_seconds=config.RATE_LIMIT_WINDOW,
+    exempt_user_ids={config.OWNER_ID},
+)
+start_rate_limiter = RateLimiter(
+    max_requests=1,
+    window_seconds=config.START_COOLDOWN_SECONDS,
+    exempt_user_ids={config.OWNER_ID},
+)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -26,6 +37,19 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "• Tiếng Việt → Tiếng Anh (mặc định)\n"
             "• Thêm `en` hoặc `zh` để chọn ngôn ngữ đích, ví dụ:\n"
             "   `en xin chào` hoặc `xin chào zh`"
+        )
+        return
+
+    if access.is_pending(uid):
+        logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
+        await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
+        return
+
+    if not await start_rate_limiter.check(uid):
+        retry_after = await start_rate_limiter.get_retry_after(uid)
+        logger.warning("User %s bị giới hạn /start, thử lại sau %s giây.", uid, retry_after)
+        await update.message.reply_text(
+            f"⏳ Bạn thao tác quá nhanh. Vui lòng chờ {retry_after} giây rồi thử lại /start."
         )
         return
 
@@ -90,6 +114,22 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     text = update.message.text
     if not text:
+        return
+
+    if len(text) > config.MAX_MESSAGE_LENGTH:
+        logger.warning("User %s gửi tin quá dài: %s ký tự.", uid, len(text))
+        await update.message.reply_text(
+            f"⚠️ Tin nhắn quá dài (tối đa {config.MAX_MESSAGE_LENGTH} ký tự). "
+            "Vui lòng rút gọn hoặc chia nhỏ."
+        )
+        return
+
+    if not await message_rate_limiter.check(uid):
+        retry_after = await message_rate_limiter.get_retry_after(uid)
+        logger.warning("User %s bị rate limit, thử lại sau %s giây.", uid, retry_after)
+        await update.message.reply_text(
+            f"⏳ Bạn gửi quá nhanh. Vui lòng chờ {retry_after} giây rồi thử lại."
+        )
         return
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
