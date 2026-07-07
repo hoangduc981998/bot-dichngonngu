@@ -39,8 +39,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "   `en xin chào` hoặc `xin chào zh`"
         )
         return
-
-    if access.is_pending(uid):
+    elif access.is_pending(uid):
         logger.info("User %s đang chờ duyệt và gửi lại /start.", uid)
         await update.message.reply_text("⏳ Yêu cầu của bạn đang chờ duyệt. Vui lòng đợi quản trị viên phản hồi.")
         return

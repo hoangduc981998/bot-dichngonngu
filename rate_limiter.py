@@ -55,7 +55,7 @@ class RateLimiter:
             if not events or len(events) < self.max_requests:
                 return 0
 
-            retry_after = self.window_seconds - (now - events[0])
+            retry_after = max(0, self.window_seconds - (now - events[0]))
             return max(1, math.ceil(retry_after))
 
     def _prune_user(self, user_id: int, now: float) -> deque[float] | None:
