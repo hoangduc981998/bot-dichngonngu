@@ -23,7 +23,7 @@ class RateLimiter:
 
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.exempt_user_ids = set(exempt_user_ids or set())
+        self.exempt_user_ids = set(exempt_user_ids or ())
         self._time_func = time_func or monotonic
         self._lock = asyncio.Lock()
         self._events: dict[int, deque[float]] = {}
